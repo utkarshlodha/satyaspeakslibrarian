@@ -8,16 +8,17 @@ import SummaryDisplay from '@/components/ui/SummaryDisplay'
 // This function tells Next.js this is a dynamic route
 export const dynamic = 'force-dynamic'
 
-interface PageProps {
-  params: { id: string }
+type PageProps = {
+  params: Promise<{ id: string }>
 }
 
 export default async function SharedPage({ params }: PageProps) {
+  const resolvedParams = await params
   const supabase = createClient()
   const { data } = await supabase
     .from('shared')
     .select()
-    .eq('id', params.id)
+    .eq('id', resolvedParams.id)
     .single()
 
   if (!data) return notFound()
