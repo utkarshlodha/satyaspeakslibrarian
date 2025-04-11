@@ -5,7 +5,14 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import SummaryDisplay from '@/components/ui/SummaryDisplay'
 
-export default async function SharedPage({ params }: { params: { id: string } }) {
+interface Props {
+  params: {
+    id: string
+  }
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export default async function SharedPage({ params }: Props) {
   const supabase = createClient()
   const { data } = await supabase
     .from('shared')
