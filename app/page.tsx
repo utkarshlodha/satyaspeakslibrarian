@@ -8,7 +8,10 @@ import { toast } from 'sonner'
 import SummaryDisplay from '@/components/ui/SummaryDisplay'
 import { createClient } from '@/lib/supabase'
 
-
+interface Video {
+  title: string;
+  link: string;
+}
 
 const rotatingPlaceholders = [
   'How to deal with anger',
@@ -21,7 +24,7 @@ const rotatingPlaceholders = [
 export default function Home() {
   const [question, setQuestion] = useState('')
   const [summary, setSummary] = useState('')
-  const [video, setVideo] = useState<any | null>(null)
+  const [video, setVideo] = useState<Video | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)

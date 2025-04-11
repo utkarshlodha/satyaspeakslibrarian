@@ -2,10 +2,7 @@
 
 import { createClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
-import { Search, SendHorizonalIcon } from 'lucide-react'
 import Image from 'next/image'
-import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
-import { currentUser } from '@clerk/nextjs/server'
 import SummaryDisplay from '@/components/ui/SummaryDisplay'
 
 export default async function SharedPage({ params }: { params: { id: string } }) {
@@ -17,8 +14,6 @@ export default async function SharedPage({ params }: { params: { id: string } })
     .single()
 
   if (!data) return notFound()
-
-  const user = await currentUser()
 
   const getYouTubeEmbedUrl = (url: string) => {
     const id = url.split('v=')[1]?.split('&')[0] || ''
@@ -39,25 +34,6 @@ export default async function SharedPage({ params }: { params: { id: string } })
           />
           <h1 className="text-xl font-bold text-gray-700">Satya Speaks</h1>
         </div>
-
-        {/* <div>
-          {user ? (
-            <UserButton afterSignOutUrl="/" />
-          ) : (
-            <div className="flex gap-4">
-              <SignInButton mode="modal">
-                <button className="px-6 py-2 rounded-full bg-black text-white font-medium hover:scale-105 transition-transform duration-200">
-                  Log in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="px-6 py-2 rounded-full border border-gray-400 text-black font-medium hover:bg-gray-100 transition duration-200">
-                  Sign up
-                </button>
-              </SignUpButton>
-            </div>
-          )}
-        </div> */}
       </nav>
 
       {/* Shared Content */}
