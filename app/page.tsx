@@ -1,103 +1,267 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import { Search, SendHorizonalIcon } from 'lucide-react'
+import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs'
+import { toast } from 'sonner'
+import SummaryDisplay from '@/components/ui/SummaryDisplay'
+import { createClient } from '@/lib/supabase'
+
+
+
+const rotatingPlaceholders = [
+  'How to deal with anger',
+  'Why am I always anxious?',
+  'How to make peace with the past?',
+  'What is true happiness?',
+  'How to meditate when my mind is racing?',
+]
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [question, setQuestion] = useState('')
+  const [summary, setSummary] = useState('')
+  const [video, setVideo] = useState<any | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [fade, setFade] = useState(true)
+  const [lastAskedQuestion, setLastAskedQuestion] = useState('')
+  const [shareUrl, setShareUrl] = useState('')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+
+  const { isSignedIn } = useUser()
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setPlaceholderIndex((prev) => (prev + 1) % rotatingPlaceholders.length)
+        setFade(true)
+      }, 100)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const ask = async () => {
+    if (!isSignedIn) {
+      toast.error('Please sign in to ask a question.')
+      return
+    }
+    if (!question.trim()) return
+  
+    setLoading(true)
+    setSubmitted(true)
+    setLastAskedQuestion(question) 
+  
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+  
+    const data = await res.json()
+    setSummary(data.summary)
+    setVideo(data.video)
+    
+    setLoading(false)
+  
+    // 👇 Save to Supabase
+    const supabase = createClient()
+    const { data: saved, error } = await supabase
+      .from('shared')
+      .insert([
+        {
+          question,
+          summary: data.summary,
+          video: data.video,
+        },
+      ])
+      .select()
+      .single()
+  
+    if (error) {
+      console.error('Error saving shared content:', error)
+    } else {
+      const generatedShareUrl = `${window.location.origin}/share/${saved.id}`
+      setShareUrl(generatedShareUrl)
+
+      // toast.success('Question answered! You can share this link.', {
+      //   action: {
+      //     label: 'Copy link',
+      //     onClick: () => {
+      //       navigator.clipboard.writeText(shareUrl)
+      //       toast.success('Link copied to clipboard!')
+      //     },
+      //   },
+      // })
+    }
+  
+    // Clear input
+    setQuestion('')
+  }
+  
+
+  const getYouTubeEmbedUrl = (url: string) => {
+    const id = url.split('v=')[1]?.split('&')[0] || ''
+    return `https://www.youtube.com/embed/${id}`
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top Navbar */}
+      <nav className="w-full px-6 py-4 flex items-center justify-between bg-gray-50/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+          <div className="flex items-center gap-4">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="/satyaji.jpg"
+              alt="Satya Ji"
+              width={69}
+              height={69}
+              className="rounded-full"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <h1 className="text-xl font-bold text-gray-700">Satya Speaks</h1>
+          </div>
+
+          <div>
+            {isSignedIn ? (
+              <UserButton afterSignOutUrl="/" />
+            ) : (
+              <div className="flex gap-4">
+                <SignInButton mode="modal">
+                  <button className="px-6 py-2 rounded-full bg-black text-white font-medium hover:scale-105 transition-transform duration-200">
+                    Log in
+                  </button>
+                </SignInButton>
+
+                <SignUpButton mode="modal">
+                  <button className="px-6 py-2 rounded-full border border-gray-400 text-black font-medium hover:bg-gray-100 transition duration-200">
+                    Sign up
+                  </button>
+                </SignUpButton>
+              </div>
+            )}
+          </div>
+        </nav>
+
+      {!submitted ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
+          <h2 className="text-5xl font-bold mb-12 text-gray-800 max-w-2xl leading-tight">
+            What can I help with?
+          </h2>
+
+          <div className="w-full max-w-2xl relative">
+            <div className="relative shadow-2xl rounded-full transition focus-within:shadow-[0_0_30px_rgba(0,0,0,0.15)]">
+              {/* Search Icon */}
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6" />
+
+              {/* Animated Placeholder */}
+              {!question && (
+                <div
+                  className={`absolute left-14 right-24 top-1/2 -translate-y-1/2 text-xl text-gray-400 pointer-events-none transition-opacity duration-500 ease-in-out ${
+                    fade ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  {rotatingPlaceholders[placeholderIndex]}
+                </div>
+              )}
+
+              {/* Input Field */}
+              <input
+                type="text"
+                role="searchbox"
+                className="w-full h-20 pl-14 pr-24 text-xl rounded-full focus:outline-none shadow-lg transition focus:scale-[1.01]"
+                placeholder={submitted ? "How can I assist you?" : ""}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && ask()}
+                aria-label="Ask your question"
+              />
+
+              {/* Send Button */}
+              <button
+                onClick={ask}
+                className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 hover:text-blue-800 transition rounded-full"
+                aria-label="Send question"
+              >
+                <SendHorizonalIcon size={28} />
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      ) : (
+        <div className="max-w-3xl mx-auto w-full p-4 mt-4 flex-1 flex flex-col justify-between">
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-md p-6">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-black-600 font-medium font-bold text-sm">You asked:</h3>
+                {shareUrl && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(shareUrl)
+                      toast.success('Link copied to clipboard!')
+                    }}
+                    className="text-xs px-3 py-1 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
+                  >
+                    Share
+                  </button>
+                )}
+              </div>
+              <p className="text-gray-800 text-lg">{lastAskedQuestion}</p>
+            </div>
+
+            {loading ? (
+              <p className="text-center text-gray-500 text-lg flex justify-center items-center gap-1">
+                <span className="thinking-text">Thinking</span>
+                <span className="dots"><span>.</span><span>.</span><span>.</span></span>
+              </p>
+            ) : (
+              <>
+                {video && (
+                  <div className="bg-white rounded-2xl shadow-md p-4 space-y-4">
+                    <h3 className="text-gray-700 font-bold font-medium text-lg">Satya ji has answered your question in this video:</h3>
+                    <iframe
+                      src={getYouTubeEmbedUrl(video.link)}
+                      className="w-full aspect-video rounded-lg"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                    <p className="text-gray-600 text-sm">{video.title}</p>
+                  </div>
+                )}
+                {summary && (
+                  <div className="bg-white rounded-2xl shadow-md p-6">
+                    <SummaryDisplay text={summary} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          {/* Spacer to prevent search bar from blocking content */}
+          <div className="h-28" />
+
+          {/* Fixed Search Bar */}
+          <div className="fixed bottom-4 left-0 right-0 px-4 z-50">
+            <div className="max-w-2xl mx-auto shadow-2xl rounded-full relative bg-white">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6" />
+              <input
+                type="text"
+                className="w-full h-16 pl-14 pr-24 text-lg rounded-full border border-gray-200 focus:outline-none shadow-md transition-all duration-300"
+                placeholder={submitted ? "How can I assist you?" : ""}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && ask()}
+              />
+              <button
+                onClick={ask}
+                className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 hover:text-gray-800 transition-all"
+                aria-label="Send"
+              >
+                <SendHorizonalIcon size={24} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  )
 }
