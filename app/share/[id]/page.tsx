@@ -5,9 +5,11 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import SummaryDisplay from '@/components/ui/SummaryDisplay'
 
-type PageProps = {
+// This function tells Next.js this is a dynamic route
+export const dynamic = 'force-dynamic'
+
+interface PageProps {
   params: { id: string }
-  searchParams?: { [key: string]: string | string[] | undefined }
 }
 
 export default async function SharedPage({ params }: PageProps) {
@@ -27,7 +29,6 @@ export default async function SharedPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar */}
       <nav className="w-full px-6 py-4 flex items-center justify-between bg-gray-50/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <Image
@@ -41,7 +42,6 @@ export default async function SharedPage({ params }: PageProps) {
         </div>
       </nav>
 
-      {/* Shared Content */}
       <div className="max-w-3xl mx-auto w-full p-4 mt-4 flex-1 flex flex-col justify-between">
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-md p-6">
@@ -72,3 +72,4 @@ export default async function SharedPage({ params }: PageProps) {
     </main>
   )
 }
+
