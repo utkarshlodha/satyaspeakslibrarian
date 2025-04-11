@@ -4,12 +4,19 @@ import { createClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import SummaryDisplay from '@/components/ui/SummaryDisplay'
+import type { Metadata } from 'next'
 
-export default async function Page({
-  params,
-}: {
+export const metadata: Metadata = {
+  title: 'Shared Question - Satya Speaks',
+  description: 'View a shared question and answer from Satya Ji',
+}
+
+type Props = {
   params: { id: string }
-}) {
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export default async function Page({ params }: Props) {
   const supabase = createClient()
   const { data } = await supabase
     .from('shared')
