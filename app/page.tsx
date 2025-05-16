@@ -84,20 +84,25 @@ export default function Home() {
       .single()
   
     if (error) {
-      console.error('Error saving shared content:', error)
+      console.error('Error saving shared content:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      toast.error('Failed to save shared content. Please try again.')
     } else {
       const generatedShareUrl = `${window.location.origin}/share/${saved.id}`
       setShareUrl(generatedShareUrl)
-
-      // toast.success('Question answered! You can share this link.', {
-      //   action: {
-      //     label: 'Copy link',
-      //     onClick: () => {
-      //       navigator.clipboard.writeText(shareUrl)
-      //       toast.success('Link copied to clipboard!')
-      //     },
-      //   },
-      // })
+      toast.success(' You can share this link.', {
+        action: {
+          label: 'Copy link',
+          onClick: () => {
+            navigator.clipboard.writeText(generatedShareUrl)
+            toast.success('Link copied to clipboard!')
+          },
+        },
+      })
     }
   
     // Clear input
